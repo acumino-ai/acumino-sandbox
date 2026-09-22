@@ -1,0 +1,40 @@
+replicaCount: 2
+
+image:
+  repository: 476918794945.dkr.ecr.us-east-1.amazonaws.com/telemetry-signer
+  tag: latest
+  pullPolicy: Always
+
+serviceAccount:
+  create: true
+  name: telemetry-signer
+  # IRSA role used to sign S3 URLs
+  roleArn: ""
+
+config:
+  bucket: ""
+  region: us-east-1
+  urlTtlSeconds: 604800
+  jwksUrl: ""
+  audience: api://telemetry-signer
+  allowedDatasets: telemetry,diagnostics,video
+
+service:
+  type: ClusterIP
+  port: 80
+
+ingress:
+  enabled: false
+  className: alb
+  host: ""
+  annotations: {}
+
+resources: {}
+
+networkPolicy:
+  enabled: false
+
+podAnnotations: {}
+nodeSelector: {}
+tolerations: []
+affinity: {}
