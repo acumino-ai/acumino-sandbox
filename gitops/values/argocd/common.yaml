@@ -1,0 +1,15 @@
+configs:
+  params:
+    # TLS is terminated at the ALB
+    server.insecure: true
+  cm:
+    admin.enabled: true
+    timeout.reconciliation: 60s
+
+server:
+  ingress:
+    enabled: true
+    ingressClassName: alb
+    annotations:
+      alb.ingress.kubernetes.io/scheme: internet-facing
+      alb.ingress.kubernetes.io/target-type: ip
