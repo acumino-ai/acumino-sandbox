@@ -1,0 +1,77 @@
+# Ships all container logs from each site cluster to CloudWatch so we can debug sites remotely.
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: edge-fluent-bit
+  namespace: argocd
+spec:
+  goTemplate: true
+  goTemplateOptions: ["missingkey=error"]
+  generators:
+    # Edge sites are registered as Argo CD clusters by scripts/bootstrap-edge-site.sh
+    - clusters:
+        selector:
+          matchLabels:
+            acumino.io/role: edge
+  template:
+    metadata:
+      name: 'fluent-bit-{{.name}}'
+    spec:
+      project: default
+      source:
+        repoURL: https://fluent.github.io/helm-charts
+        chart: fluent-bit
+        targetRevision: 0.47.*
+        helm:
+          valuesObject:
+            env:
+              - name: AWS_ACCESS_KEY_ID
+                valueFrom:
+                  secretKeyRef:
+                    name: edge-aws-logs
+                    key: access_key_id
+              - name: AWS_SECRET_ACCESS_KEY
+                valueFrom:
+                  secretKeyRef:
+                    name: edge-aws-logs
+                    key: secret_access_key
+            config:
+              service: |
+                [SERVICE]
+                    Flush         5
+                    Log_Level     info
+                    Parsers_File  /fluent-bit/etc/parsers.conf
+                    HTTP_Server   On
+                    HTTP_Listen   0.0.0.0
+                    HTTP_Port     2020
+                    storage.type  memory
+              inputs: |
+                [INPUT]
+                    Name              tail
+                    Path              /var/log/containers/*.log
+                    multiline.parser  docker, cri
+                    Tag               kube.*
+                    Mem_Buf_Limit     5MB
+                    Skip_Long_Lines   On
+              filters: |
+                [FILTER]
+                    Name       kubernetes
+                    Match      kube.*
+                    Merge_Log  On
+              outputs: |
+                [OUTPUT]
+                    Name               cloudwatch_logs
+                    Match              kube.*
+                    region             us-east-1
+                    log_group_name     /acumino/edge
+                    log_stream_prefix  {{index .metadata.annotations "acumino.io/site-id"}}-
+                    auto_create_group  On
+      destination:
+        server: '{{.server}}'
+        namespace: edge-system
+      syncPolicy:
+        automated:
+          prune: true
+          selfHeal: true
+        syncOptions:
+          - CreateNamespace=true
