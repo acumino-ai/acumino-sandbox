@@ -1,0 +1,69 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+  pull_request:
+
+permissions: write-all
+
+env:
+  AWS_REGION: us-east-1
+  ECR_REGISTRY: 476918794945.dkr.ecr.us-east-1.amazonaws.com
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: services/telemetry-signer
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v3
+      - run: uv sync
+      - run: uv run ruff check .
+      - run: uv run pytest -q
+
+  chart-lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: azure/setup-helm@v4
+      - run: helm lint charts/telemetry-signer
+
+  publish:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: [test, chart-lint]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build and push image
+        run: |
+          docker build -t $ECR_REGISTRY/telemetry-signer:${GITHUB_REF_NAME#v} -t $ECR_REGISTRY/telemetry-signer:latest services/telemetry-signer
+          docker push --all-tags $ECR_REGISTRY/telemetry-signer
+          docker build -t $ECR_REGISTRY/telemetry-agent:${GITHUB_REF_NAME#v} -t $ECR_REGISTRY/telemetry-agent:latest services/telemetry-agent
+          docker push --all-tags $ECR_REGISTRY/telemetry-agent
+
+      - name: Scan image
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: ${{ env.ECR_REGISTRY }}/telemetry-signer:latest
+          exit-code: "0"
+
+      - uses: azure/setup-helm@v4
+
+      - name: Push chart
+        run: |
+          helm package charts/telemetry-signer
+          aws ecr get-login-password | helm registry login --username AWS --password-stdin $ECR_REGISTRY
+          helm push telemetry-signer-*.tgz oci://$ECR_REGISTRY/charts

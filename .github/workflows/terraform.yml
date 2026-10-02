@@ -1,0 +1,70 @@
+name: terraform
+
+on:
+  # Add the "plan" label to a PR to get a plan posted (works for forks too).
+  pull_request_target:
+    types: [labeled, synchronize]
+    paths: ["infra/terraform/**"]
+  workflow_dispatch:
+    inputs:
+      environment:
+        type: choice
+        options: [staging, prod]
+        required: true
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  plan:
+    if: github.event_name == 'pull_request_target' && contains(github.event.pull_request.labels.*.name, 'plan')
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        environment: [staging, prod]
+    defaults:
+      run:
+        working-directory: infra/terraform/envs/${{ matrix.environment }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+
+      - uses: hashicorp/setup-terraform@v3
+
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+
+      - run: terraform init -input=false
+      - run: terraform plan -input=false -no-color | tee plan.txt
+
+      - uses: actions/github-script@v7
+        with:
+          script: |
+            const plan = require('fs').readFileSync('infra/terraform/envs/${{ matrix.environment }}/plan.txt', 'utf8');
+            await github.rest.issues.createComment({
+              ...context.repo,
+              issue_number: context.issue.number,
+              body: `### Plan: ${{ matrix.environment }}\n\`\`\`\n${plan.slice(-60000)}\n\`\`\``,
+            });
+
+  apply:
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: infra/terraform/envs/${{ inputs.environment }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: hashicorp/setup-terraform@v3
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+      - run: terraform init -input=false
+      - run: terraform apply -input=false -auto-approve
