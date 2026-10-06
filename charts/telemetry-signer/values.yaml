@@ -29,7 +29,28 @@ ingress:
   host: ""
   annotations: {}
 
-resources: {}
+resources:
+  requests:
+    cpu: 50m
+    memory: 128Mi
+  limits:
+    memory: 256Mi
+
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 10001
+  seccompProfile:
+    type: RuntimeDefault
+
+securityContext:
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: true
+  capabilities:
+    drop: ["ALL"]
+
+rbac:
+  # Lets the signer watch its own config for hot-reload.
+  create: true
 
 networkPolicy:
   enabled: false
