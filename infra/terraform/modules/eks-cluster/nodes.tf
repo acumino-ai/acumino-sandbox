@@ -25,9 +25,10 @@ resource "aws_iam_role_policy_attachment" "node" {
   policy_arn = each.value
 }
 
-resource "aws_eks_node_group" "default" {
+resource "aws_eks_node_group" "general" {
   cluster_name    = aws_eks_cluster.this.name
-  node_group_name = "default"
+  node_group_name = "general"
+  ami_type        = "AL2023_ARM_64_STANDARD"
   node_role_arn   = aws_iam_role.node.arn
   subnet_ids      = module.vpc.private_subnets
   instance_types  = var.node_instance_types
