@@ -51,6 +51,8 @@ jobs:
         run: |
           docker build -t $ECR_REGISTRY/telemetry-signer:${GITHUB_REF_NAME#v} -t $ECR_REGISTRY/telemetry-signer:latest services/telemetry-signer
           docker push --all-tags $ECR_REGISTRY/telemetry-signer
+          docker build -t $ECR_REGISTRY/telemetry-agent:${GITHUB_REF_NAME#v} -t $ECR_REGISTRY/telemetry-agent:latest services/telemetry-agent
+          docker push --all-tags $ECR_REGISTRY/telemetry-agent
 
       - name: Scan image
         uses: aquasecurity/trivy-action@master

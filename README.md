@@ -19,12 +19,13 @@ robots ──► edge cluster (k3s, per site)          AWS (EKS prod)
 | Path | What |
 |---|---|
 | `services/telemetry-signer/` | Python service that issues presigned S3 upload URLs |
+| `services/telemetry-agent/` | Edge agent that uploads telemetry bundles via the signer |
 | `charts/telemetry-signer/` | Helm chart for the service (published to ECR as OCI) |
 | `gitops/clusters/cloud-<env>/` | Argo CD root app (`root.yaml`) and the Applications it manages (`apps/`) |
 | `gitops/values/` | Helm values per app and environment (`common.yaml` + `<env>.yaml`) |
 | `gitops/manifests/` | Plain manifests synced by Argo CD (e.g. network policies) |
 | `gitops/edge/` | Manifests deployed to every edge site by the prod ApplicationSets |
-| `infra/terraform/` | AWS infrastructure: EKS, telemetry bucket, edge fleet identity |
+| `infra/terraform/` | AWS infrastructure: EKS, telemetry bucket, edge fleet identity; `bootstrap/` holds state bucket + ECR |
 | `scripts/` | Bootstrap scripts for Argo CD and edge sites |
 | `.github/workflows/` | CI, image/chart publishing, Terraform plan/apply |
 
