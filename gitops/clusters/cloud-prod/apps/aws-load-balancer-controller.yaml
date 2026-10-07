@@ -12,8 +12,13 @@ spec:
     helm:
       valuesObject:
         clusterName: eks-acumino-prod
+        region: us-east-1
+        vpcTags:
+          Name: eks-acumino-prod
         serviceAccount:
           name: aws-load-balancer-controller
+          annotations:
+            eks.amazonaws.com/role-arn: arn:aws:iam::476918794945:role/eks-acumino-prod-lbc
   destination:
     server: https://kubernetes.default.svc
     namespace: kube-system

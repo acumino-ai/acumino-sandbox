@@ -17,3 +17,11 @@ output "oidc_issuer" {
 output "vpc_id" {
   value = module.vpc.vpc_id
 }
+
+output "lbc_role_arn" {
+  value = aws_iam_role.lbc.arn
+}
+
+output "nat_public_ips" {
+  value = module.vpc.nat_public_ips
+}

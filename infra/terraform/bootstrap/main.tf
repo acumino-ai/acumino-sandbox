@@ -1,4 +1,5 @@
-# One-off: creates the remote state bucket. Applied manually with local state.
+# One-off, shared by all environments: remote state bucket and container registries.
+# Applied manually with local state.
 terraform {
   required_providers {
     aws = {
@@ -10,6 +11,10 @@ terraform {
 
 provider "aws" {
   region = "us-east-1"
+
+  assume_role {
+    role_arn = "arn:aws:iam::476918794945:role/OrganizationAccountAccessRole"
+  }
 }
 
 resource "aws_s3_bucket" "tfstate" {
@@ -21,4 +26,15 @@ resource "aws_s3_bucket_versioning" "tfstate" {
   versioning_configuration {
     status = "Enabled"
   }
+}
+
+resource "aws_ecr_repository" "this" {
+  for_each = toset([
+    "telemetry-signer",
+    "telemetry-agent",
+    "charts/telemetry-signer",
+  ])
+
+  name         = each.value
+  force_delete = true
 }

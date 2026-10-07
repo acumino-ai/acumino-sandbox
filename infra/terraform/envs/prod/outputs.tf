@@ -9,3 +9,11 @@ output "telemetry_bucket" {
 output "signer_role_arn" {
   value = module.telemetry.signer_role_arn
 }
+
+output "lbc_role_arn" {
+  value = module.eks.lbc_role_arn
+}
+
+output "nat_public_ips" {
+  value = module.eks.nat_public_ips
+}
