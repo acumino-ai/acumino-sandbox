@@ -1,0 +1,12 @@
+replicaCount: 1
+serviceAccount:
+  roleArn: arn:aws:iam::476918794945:role/telemetry-signer-staging
+config:
+  bucket: acumino-telemetry-prod
+  jwksUrl: https://login.acumino.example/prod/discovery/v2.0/keys
+ingress:
+  enabled: true
+  host: signer.acumino.example
+  annotations:
+    alb.ingress.kubernetes.io/scheme: internet-facing
+    alb.ingress.kubernetes.io/target-type: ip

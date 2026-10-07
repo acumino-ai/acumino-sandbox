@@ -1,0 +1,25 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: telemetry-signer
+  namespace: argocd
+spec:
+  project: default
+  sources:
+    - repoURL: 476918794945.dkr.ecr.us-east-1.amazonaws.com/charts
+      chart: telemetry-signer
+      targetRevision: 0.4.1
+      helm:
+        valueFiles:
+          - $values/gitops/values/telemetry-signer/common.yaml
+          - $values/gitops/values/telemetry-signer/prod.yaml
+    - repoURL: https://github.com/acumino-ai/acumino-sandbox.git
+      targetRevision: main
+      ref: values
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: telemetry
+  syncPolicy:
+    automated: {}
+    syncOptions:
+      - CreateNamespace=true

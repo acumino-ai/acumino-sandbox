@@ -1,0 +1,25 @@
+# Argo CD manages itself after the initial helm install.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: argocd
+  namespace: argocd
+spec:
+  project: default
+  sources:
+    - repoURL: https://argoproj.github.io/argo-helm
+      chart: argo-cd
+      targetRevision: 7.6.12
+      helm:
+        valueFiles:
+          - $values/gitops/values/argocd/common.yaml
+          - $values/gitops/values/argocd/prod.yaml
+    - repoURL: https://github.com/acumino-ai/acumino-sandbox.git
+      targetRevision: main
+      ref: values
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: argocd
+  syncPolicy:
+    automated:
+      selfHeal: true
