@@ -1,0 +1,44 @@
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: edge-telemetry-agent
+  namespace: argocd
+spec:
+  goTemplate: true
+  goTemplateOptions: ["missingkey=error"]
+  generators:
+    # Edge sites are registered as Argo CD clusters by scripts/bootstrap-edge-site.sh
+    - clusters:
+        selector:
+          matchLabels:
+            acumino.io/role: edge
+  template:
+    metadata:
+      name: 'telemetry-agent-{{.name}}'
+    spec:
+      project: default
+      source:
+        repoURL: https://github.com/acumino-ai/acumino-sandbox.git
+        targetRevision: main
+        path: gitops/edge/telemetry-agent
+        kustomize:
+          patches:
+            - target:
+                kind: Deployment
+                name: telemetry-agent
+              patch: |-
+                - op: replace
+                  path: /spec/template/spec/containers/0/env/0/value
+                  value: '{{index .metadata.annotations "acumino.io/site-id"}}'
+                - op: replace
+                  path: /spec/template/spec/containers/0/env/1/value
+                  value: '{{index .metadata.annotations "acumino.io/tenant"}}'
+      destination:
+        server: '{{.server}}'
+        namespace: edge-system
+      syncPolicy:
+        automated:
+          prune: true
+          selfHeal: true
+        syncOptions:
+          - CreateNamespace=true

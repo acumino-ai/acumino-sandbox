@@ -1,0 +1,52 @@
+# Collects telemetry bundles from robots on the site network, requests an upload URL
+# from telemetry-signer and pushes the bundle to S3.
+# SITE_ID and TENANT are filled in per site by the edge-telemetry-agent ApplicationSet.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: telemetry-agent
+  labels:
+    app.kubernetes.io/name: telemetry-agent
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: telemetry-agent
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: telemetry-agent
+    spec:
+      containers:
+        - name: agent
+          image: 476918794945.dkr.ecr.us-east-1.amazonaws.com/telemetry-agent:latest
+          imagePullPolicy: Always
+          env:
+            - name: SITE_ID
+              value: unset
+            - name: TENANT
+              value: unset
+            - name: SIGNER_URL
+              value: https://signer.acumino.example/v1/uploads
+            - name: DATASETS
+              value: telemetry,diagnostics,video
+            - name: SPOOL_DIR
+              value: /spool
+            - name: OIDC_TOKEN_URL
+              value: https://login.acumino.example/prod/oauth2/v2.0/token
+            - name: OIDC_CLIENT_ID
+              valueFrom:
+                secretKeyRef:
+                  name: edge-fleet-client
+                  key: client_id
+            - name: OIDC_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: edge-fleet-client
+                  key: client_secret
+          volumeMounts:
+            - name: spool
+              mountPath: /spool
+      volumes:
+        - name: spool
+          emptyDir: {}
