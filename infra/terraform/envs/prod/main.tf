@@ -1,0 +1,35 @@
+provider "aws" {
+  region = var.region
+
+  assume_role {
+    role_arn = "arn:aws:iam::476918794945:role/OrganizationAccountAccessRole"
+  }
+
+  default_tags {
+    tags = {
+      environment = "prod"
+      managed-by  = "terraform"
+    }
+  }
+}
+
+module "eks" {
+  source = "../../modules/eks-cluster"
+
+  name     = "eks-acumino-prod"
+  vpc_cidr = "10.30.0.0/16"
+  azs      = ["${var.region}a", "${var.region}b"]
+}
+
+module "telemetry" {
+  source = "../../modules/telemetry-bucket"
+
+  bucket_name       = "acumino-telemetry-prod"
+  signer_role_name  = "telemetry-signer-prod"
+  oidc_provider_arn = module.eks.oidc_provider_arn
+  oidc_issuer       = module.eks.oidc_issuer
+}
+
+module "edge_fleet" {
+  source = "../../modules/edge-fleet"
+}
