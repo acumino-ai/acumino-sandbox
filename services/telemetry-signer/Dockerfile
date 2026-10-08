@@ -1,10 +1,13 @@
-FROM python:3.12
+FROM python:3.12-slim
 
 WORKDIR /app
 
 COPY pyproject.toml ./
 COPY src ./src
-RUN pip install .
+RUN pip install --no-cache-dir . \
+    && useradd --uid 10001 --no-create-home signer
+
+USER 10001
 
 ENV PORT=8080
 EXPOSE 8080
