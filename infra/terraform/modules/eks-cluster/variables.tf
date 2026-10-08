@@ -17,7 +17,7 @@ variable "azs" {
 
 variable "node_instance_types" {
   type    = list(string)
-  default = ["m5.large"]
+  default = ["m7g.large"] # Graviton: ~20% cheaper than m5.large
 }
 
 variable "node_min_size" {
