@@ -1,2 +1,11 @@
 image:
   tag: latest
+replicaCount: 3
+# One replica per node so a node loss never takes the signer down.
+affinity:
+  podAntiAffinity:
+    requiredDuringSchedulingIgnoredDuringExecution:
+      - topologyKey: kubernetes.io/hostname
+        labelSelector:
+          matchLabels:
+            app.kubernetes.io/name: telemetry-signer

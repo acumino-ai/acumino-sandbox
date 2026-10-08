@@ -19,6 +19,10 @@ module "eks" {
   name     = "eks-acumino-prod"
   vpc_cidr = "10.30.0.0/16"
   azs      = ["${var.region}a", "${var.region}b"]
+
+  node_instance_types = ["t8i.small"]
+  node_min_size       = 3
+  node_max_size       = 4
 }
 
 module "telemetry" {

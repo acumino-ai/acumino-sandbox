@@ -1,4 +1,3 @@
-replicaCount: 1
 serviceAccount:
   roleArn: arn:aws:iam::476918794945:role/telemetry-signer-staging
 config:
