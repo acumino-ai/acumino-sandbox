@@ -1,3 +1,6 @@
+image:
+  tag: "0.7.0"
+  pullPolicy: IfNotPresent
 serviceAccount:
   roleArn: arn:aws:iam::476918794945:role/telemetry-signer-staging
 config:

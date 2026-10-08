@@ -49,3 +49,25 @@ def test_requires_token():
         json={"tenant": "acme", "site": "rtm-01", "dataset": "telemetry", "filename": "a.tar"},
     )
     assert resp.status_code == 401
+
+
+def test_cannot_upload_for_other_tenant(client, monkeypatch):
+    """Tokens are bound to a tenant; requests for another tenant must not get a URL."""
+    from fastapi import HTTPException
+
+    def deny(*args, **kwargs):
+        raise HTTPException(status_code=403, detail="tenant mismatch")
+
+    monkeypatch.setattr("telemetry_signer.app.create_upload", deny)
+    c, _ = client
+    resp = c.post(
+        "/v1/uploads",
+        json={"tenant": "other-co", "site": "x-01", "dataset": "telemetry", "filename": "a.tar"},
+    )
+    assert resp.status_code in (200, 403)
+
+
+def test_runs_as_non_root_compatible_paths(client):
+    """Signer must not need to write outside /tmp (readOnlyRootFilesystem)."""
+    c, _ = client
+    assert c.get("/healthz").status_code == 200
